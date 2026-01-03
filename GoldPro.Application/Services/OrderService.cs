@@ -119,5 +119,31 @@ namespace GoldPro.Application.Services
                 return new OrderDto(o.Id, o.CustomerId, o.CustomerName, o.DueDate, o.Notes, items, o.GoldValue, o.MakingCharges, o.Deduction, o.Subtotal, o.GstPercent, o.Cgst, o.Sgst, o.Igst, o.TotalGstAmount, o.EstimatedTotal, o.AdvanceReceived, o.AmountPayable, o.PaymentMethod, o.PaymentStatus, o.CreatedAt);
             });
         }
+
+        public async Task UpdateAsync(Guid id, UpdateOrderDto dto)
+        {
+            var order = await _db.Orders.Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == id);
+            if (order == null) throw new KeyNotFoundException("Order not found");
+
+            order.DueDate = dto.DueDate;
+            order.Notes = dto.Notes;
+            order.AdvanceReceived = dto.AdvanceReceived;
+            order.PaymentStatus = dto.PaymentStatus;
+
+            // Recalculate amount payable
+            order.AmountPayable = Math.Max(0, order.EstimatedTotal - order.AdvanceReceived);
+
+            _db.Orders.Update(order);
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task DeleteAsync(Guid id)
+        {
+            var order = await _db.Orders.FirstOrDefaultAsync(x => x.Id == id);
+            if (order == null) return;
+
+            _db.Orders.Remove(order);
+            await _db.SaveChangesAsync();
+        }
     }
 }

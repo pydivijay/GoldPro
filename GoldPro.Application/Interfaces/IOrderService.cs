@@ -10,5 +10,7 @@ namespace GoldPro.Application.Interfaces
         Task<OrderDto> CreateAsync(CreateOrderDto dto);
         Task<OrderDto?> GetAsync(Guid id);
         Task<IEnumerable<OrderDto>> ListAsync(int page = 1, int pageSize = 20);
+        Task UpdateAsync(Guid id, UpdateOrderDto dto);
+        Task DeleteAsync(Guid id);
     }
 }
