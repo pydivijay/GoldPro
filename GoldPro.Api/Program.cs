@@ -39,6 +39,7 @@ builder.Services.AddScoped<IEstimateService, EstimateService>();
 builder.Services.AddScoped<IOldGoldService, OldGoldService>();
 builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 // Auth service
 builder.Services.AddScoped<IAuthService, AuthService>();
