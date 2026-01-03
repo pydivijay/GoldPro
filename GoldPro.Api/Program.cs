@@ -40,6 +40,9 @@ builder.Services.AddScoped<IOldGoldService, OldGoldService>();
 builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 
+// Auth service
+builder.Services.AddScoped<IAuthService, AuthService>();
+
 // JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
