@@ -50,7 +50,7 @@ namespace GoldPro.Application.Services
             await _db.SaveChangesAsync();
 
             // Generate token using AuthService.LoginAsync pattern
-            var token = await _auth.LoginAsync(new DTOs.AuthDtos.LoginDto(dto.Email, dto.Password));
+            var token = await _auth.LoginAsync(new DTOs.AuthDtos.LoginDto(dto.Email, dto.Password,tenantId));
 
             return (token, tenantId);
         }

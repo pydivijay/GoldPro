@@ -42,10 +42,11 @@ namespace GoldPro.Domain.Data
             {
                 if (typeof(TenantEntity).IsAssignableFrom(entity.ClrType))
                 {
-                    // Build a lambda expression: (e) => e.Tenant.TenantId == _tenant.TenantId
+                    // Build expression: (e) => EF.Property<Guid>(e, "TenantId") == _tenant.TenantId
                     var parameter = System.Linq.Expressions.Expression.Parameter(entity.ClrType, "e");
-                    var tenantProperty = System.Linq.Expressions.Expression.Property(parameter, "Tenant");
-                    var tenantIdProperty = System.Linq.Expressions.Expression.Property(tenantProperty, "TenantId");
+                    var efPropertyMethod = typeof(EF).GetMethod("Property", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
+                    var genericEfProperty = efPropertyMethod!.MakeGenericMethod(typeof(Guid));
+                    var tenantIdProperty = System.Linq.Expressions.Expression.Call(genericEfProperty, parameter, System.Linq.Expressions.Expression.Constant("TenantId"));
                     var tenantIdValue = System.Linq.Expressions.Expression.Constant(_tenant.TenantId);
                     var equalExpression = System.Linq.Expressions.Expression.Equal(tenantIdProperty, tenantIdValue);
                     var lambda = System.Linq.Expressions.Expression.Lambda(equalExpression, parameter);

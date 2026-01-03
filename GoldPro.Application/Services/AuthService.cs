@@ -50,7 +50,13 @@ namespace GoldPro.Application.Services
 
         public async Task<string> LoginAsync(LoginDto dto)
         {
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            // var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email && u.TenantId==dto.TenantId);
+            var user = await _db.Users
+     .IgnoreQueryFilters()
+     .AsNoTracking()
+     .FirstOrDefaultAsync(u =>
+         u.Email == dto.Email &&
+         u.TenantId == dto.TenantId);
             if (user == null) throw new UnauthorizedAccessException("Invalid credentials");
 
             if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))

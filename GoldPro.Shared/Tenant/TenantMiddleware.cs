@@ -1,6 +1,8 @@
 using GoldPro.Application.Interfaces;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
+using System.Linq;
+using System;
 
 namespace GoldPro.Shared.Tenant;
 
@@ -15,23 +17,28 @@ public class TenantMiddleware
 
     public async Task Invoke(HttpContext context, ITenantContext tenant)
     {
-        var tenantId = context.User?.Claims.FirstOrDefault(c => c.Type == "tenant_id")?.Value;
+        var user = context.User;
+
+        // If request is not authenticated, skip tenant resolution (allows public endpoints like signup/login)
+        if (user?.Identity?.IsAuthenticated != true)
+        {
+            await _next(context);
+            return;
+        }
+
+        var tenantId = user.Claims.FirstOrDefault(c => c.Type == "tenant_id")?.Value;
 
         if (string.IsNullOrWhiteSpace(tenantId))
             throw new UnauthorizedAccessException("Tenant not found in token");
 
-        if (tenant is not null && tenant is ITenantContext)
+        if (tenant is not null)
         {
-            // TenantContext implementation in Domain project has settable TenantId; cast and set
-            if (tenant is TenantContext cast)
+            // TenantContext implementation in Domain project has settable TenantId; cast and set if possible
+            var tenantType = tenant.GetType();
+            var prop = tenantType.GetProperty("TenantId");
+            if (prop != null && prop.CanWrite)
             {
-                cast.TenantId = Guid.Parse(tenantId);
-            }
-            else
-            {
-                // try to set via reflection as fallback
-                var prop = tenant.GetType().GetProperty("TenantId");
-                prop?.SetValue(tenant, Guid.Parse(tenantId));
+                prop.SetValue(tenant, Guid.Parse(tenantId));
             }
         }
 
