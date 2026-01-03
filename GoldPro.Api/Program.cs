@@ -42,6 +42,7 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 // Auth service
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITenantService, TenantService>();
 
 // JWT Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

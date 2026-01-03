@@ -20,6 +20,7 @@ namespace GoldPro.Domain.Data
             _tenant = tenant;
         }
 
+        public DbSet<Tenant> Tenants => Set<Tenant>();
         public DbSet<BusinessProfile> BusinessProfiles => Set<BusinessProfile>();
         public DbSet<AppUser> Users => Set<AppUser>();
         public DbSet<InvoiceSettings> InvoiceSettings => Set<InvoiceSettings>();

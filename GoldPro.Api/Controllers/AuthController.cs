@@ -1,3 +1,4 @@
+using GoldPro.Application.DTOs;
 using GoldPro.Application.DTOs.AuthDtos;
 using GoldPro.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -9,10 +10,12 @@ namespace GoldPro.Api.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _auth;
+        private readonly ITenantService _tenantService;
 
-        public AuthController(IAuthService auth)
+        public AuthController(IAuthService auth, ITenantService tenantService)
         {
             _auth = auth;
+            _tenantService = tenantService;
         }
 
         [HttpPost("register")]
@@ -27,6 +30,13 @@ namespace GoldPro.Api.Controllers
         {
             var token = await _auth.LoginAsync(dto);
             return Ok(new { token });
+        }
+
+        [HttpPost("register-tenant")]
+        public async Task<IActionResult> RegisterTenant([FromBody] RegisterTenantDto dto)
+        {
+            var (token, tenantId) = await _tenantService.CreateTenantAsync(dto);
+            return Ok(new { token, tenantId });
         }
     }
 }
