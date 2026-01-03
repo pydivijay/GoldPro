@@ -127,5 +127,26 @@ namespace GoldPro.Application.Services
                 return new SaleDto(s.Id, s.CustomerId, s.CustomerName, s.IsInterState, items, s.GoldValue, s.MakingCharges, s.Deduction, s.Subtotal, s.GstPercent, s.Cgst, s.Sgst, s.Igst, s.TotalGstAmount, s.GrandTotal, s.TotalAmount, s.PaymentMethod, s.PaymentStatus, s.CreatedAt);
             });
         }
+
+        public async Task UpdateAsync(Guid id, UpdateSaleDto dto)
+        {
+            var sale = await _db.Sales.FirstOrDefaultAsync(x => x.Id == id);
+            if (sale == null) throw new KeyNotFoundException("Sale not found");
+
+            sale.PaymentStatus = dto.PaymentStatus;
+            sale.CreatedAt = dto.DateTime ?? sale.CreatedAt;
+
+            _db.Sales.Update(sale);
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task DeleteAsync(Guid id)
+        {
+            var sale = await _db.Sales.FirstOrDefaultAsync(x => x.Id == id);
+            if (sale == null) return;
+
+            _db.Sales.Remove(sale);
+            await _db.SaveChangesAsync();
+        }
     }
 }
