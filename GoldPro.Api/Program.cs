@@ -41,7 +41,7 @@ builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
 
 // Configure DbContext using Npgsql (Postgres)
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+var connectionString =Environment.GetEnvironmentVariable("DefaultConnection") ?? builder.Configuration.GetConnectionString("DefaultConnection")
                        ?? builder.Configuration["ConnectionStrings:DefaultConnection"]
                        ?? "Host=localhost;Database=GoldProDB;Username=postgres;Password=postgres";
 
@@ -74,9 +74,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.RequireHttpsMetadata = false;
         options.SaveToken = true;
 
-        var jwtKey = builder.Configuration["Jwt:Key"] ?? "ReplaceWithActualKey";
-        var issuerConfig = builder.Configuration["Jwt:Issuer"] ?? string.Empty;
-        var audienceConfig = builder.Configuration["Jwt:Audience"] ?? string.Empty;
+        var jwtKey = Environment.GetEnvironmentVariable("Key") ?? builder.Configuration["Jwt:Key"] ?? "ReplaceWithActualKey";
+        var issuerConfig = Environment.GetEnvironmentVariable("Issuer") ?? builder.Configuration["Jwt:Issuer"] ?? string.Empty;
+        var audienceConfig = Environment.GetEnvironmentVariable("Audience") ?? builder.Configuration["Jwt:Audience"] ?? string.Empty;
 
         // Build lists that include configured values and common variants (e.g. without dots)
         var validIssuers = new System.Collections.Generic.List<string>();
@@ -141,11 +141,15 @@ var app = builder.Build();
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// Swagger (optional)
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "PersonalFinanceTracker API v1");
+        c.RoutePrefix = "swagger";
+    });
 }
 
 

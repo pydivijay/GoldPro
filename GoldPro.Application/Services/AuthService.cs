@@ -76,9 +76,12 @@ namespace GoldPro.Application.Services
                     new Claim("tenant_id", user.TenantId.ToString())
                 };
 
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)
-            );
+            var keyString =
+                 Environment.GetEnvironmentVariable("Key")
+                 ?? _config["Jwt:Key"]
+                 ?? throw new InvalidOperationException("JWT key is not configured.");
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
 
             var creds = new SigningCredentials(
                 key,
@@ -86,8 +89,8 @@ namespace GoldPro.Application.Services
             );
 
             var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
+                issuer: Environment.GetEnvironmentVariable("Issuer") ?? _config["Jwt:Issuer"],
+                audience: Environment.GetEnvironmentVariable("Audience") ?? _config["Jwt:Audience"],
                 claims: claims,
                 expires: DateTime.UtcNow.AddHours(2),
                 signingCredentials: creds
