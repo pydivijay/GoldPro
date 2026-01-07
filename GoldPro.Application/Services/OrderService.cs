@@ -52,7 +52,7 @@ namespace GoldPro.Application.Services
 
                 var gross = item.WeightGrams * item.RatePerGram;
                 var deduction = gross * (item.WastagePercent / 100m);
-                var goldValue = gross - deduction;
+                var goldValue = gross;
 
                 item.GoldValue = goldValue;
                 item.DeductionValue = deduction;
@@ -67,7 +67,7 @@ namespace GoldPro.Application.Services
             order.GoldValue = totalGoldValue;
             order.MakingCharges = totalMaking;
             order.Deduction = totalDeduction;
-            order.Subtotal = order.GoldValue + order.MakingCharges - order.Deduction;
+            order.Subtotal = order.GoldValue + order.MakingCharges +order.Deduction;
 
             order.GstPercent = 3m;
             if (order.Items.Any())
@@ -110,13 +110,38 @@ namespace GoldPro.Application.Services
 
         public async Task<IEnumerable<OrderDto>> ListAsync(int page = 1, int pageSize = 20)
         {
-            var query = _db.Orders.Include(x => x.Items).OrderByDescending(x => x.CreatedAt).AsQueryable();
+            // Ensure we only list orders for the current tenant
+            var query = _db.Orders
+                .Where(o => o.TenantId == _tenant.TenantId)
+                .Include(x => x.Items)
+                .OrderByDescending(x => x.CreatedAt)
+                .AsQueryable();
+
             var list = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+            // Load customer names for orders that have a CustomerId
+            var customerIds = list.Where(o => o.CustomerId.HasValue).Select(o => o.CustomerId!.Value).Distinct().ToList();
+            var customerMap = new Dictionary<Guid, string>();
+            if (customerIds.Any())
+            {
+                customerMap = await _db.Customers
+                    .Where(c => customerIds.Contains(c.Id))
+                    .ToDictionaryAsync(c => c.Id, c => c.FullName);
+            }
 
             return list.Select(o =>
             {
                 var items = o.Items.Select(i => new OrderItemDto(i.Id, i.Description, i.Purity, i.WeightGrams, i.RatePerGram, i.MakingCharges, i.WastagePercent, i.GoldValue, i.DeductionValue, i.GstValue, null));
-                return new OrderDto(o.Id, o.CustomerId, o.CustomerName, o.DueDate, o.Notes, items, o.GoldValue, o.MakingCharges, o.Deduction, o.Subtotal, o.GstPercent, o.Cgst, o.Sgst, o.Igst, o.TotalGstAmount, o.EstimatedTotal, o.AdvanceReceived, o.AmountPayable, o.PaymentMethod, o.PaymentStatus, o.CreatedAt);
+
+                // Prefer stored CustomerName on order, otherwise lookup from customers table
+                string? customerName = o.CustomerName;
+                if (string.IsNullOrWhiteSpace(customerName) && o.CustomerId.HasValue)
+                {
+                    if (customerMap.TryGetValue(o.CustomerId.Value, out var name))
+                        customerName = name;
+                }
+
+                return new OrderDto(o.Id, o.CustomerId, customerName, o.DueDate, o.Notes, items, o.GoldValue, o.MakingCharges, o.Deduction, o.Subtotal, o.GstPercent, o.Cgst, o.Sgst, o.Igst, o.TotalGstAmount, o.EstimatedTotal, o.AdvanceReceived, o.AmountPayable, o.PaymentMethod, o.PaymentStatus, o.CreatedAt);
             });
         }
 
