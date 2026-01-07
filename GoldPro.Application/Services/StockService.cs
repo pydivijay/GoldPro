@@ -19,7 +19,7 @@ namespace GoldPro.Application.Services
 
         public async Task<IEnumerable<StockItemDto>> ListAsync(int page = 1, int pageSize = 20)
         {
-            var items = await _db.StockItems.OrderByDescending(x => x.CreatedAt)
+            var items = await _db.StockItems.Where(o => o.TenantId == _tenant.TenantId).OrderByDescending(x => x.CreatedAt)
                 .Skip((page - 1) * pageSize).Take(pageSize)
                 .ToListAsync();
 

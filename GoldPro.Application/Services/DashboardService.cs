@@ -67,13 +67,13 @@ namespace GoldPro.Application.Services
                 return new RecentInvoiceDto(s.Id.ToString(), custName, s.CreatedAt, s.GrandTotal, s.PaymentStatus);
             }).ToArray();
 
-            // Stock breakdown - aggregate by purity from StockItems
+            // Stock breakdown - aggregate by purity and type from StockItems
             var stockGroups = await _db.StockItems
                 .Where(x => x.TenantId == _tenant.TenantId)
-                .GroupBy(x => x.Purity)
-                .Select(g => new { Purity = g.Key, Weight = g.Sum(x => x.WeightGrams * x.Quantity) })
+                .GroupBy(x => new { x.Purity, x.Type })
+                .Select(g => new { Purity = g.Key.Purity, Type = g.Key.Type, Weight = g.Sum(x => x.WeightGrams * x.Quantity) })
                 .ToListAsync();
-            var stockBreakdown = stockGroups.Select(g => new StockBreakdownDto(g.Purity, g.Weight)).ToArray();
+            var stockBreakdown = stockGroups.Select(g => new StockBreakdownDto(g.Purity, g.Weight, g.Type)).ToArray();
             var totalStock = stockGroups.Sum(g => g.Weight);
 
             return new DashboardDto(todaysSales, monthlySales, gstCollected, totalCustomers, recentInvoices, stockBreakdown, totalStock);
