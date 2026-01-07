@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GoldPro.Api.Controllers.Settings
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     [ApiController]
     [Route("api/settings/notifications")]
     public class NotificationSettingsController : ControllerBase

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GoldPro.Api.Controllers.Settings
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     [ApiController]
     [Route("api/settings/invoice")]
     public class InvoiceSettingsController : ControllerBase
@@ -21,7 +21,7 @@ namespace GoldPro.Api.Controllers.Settings
         public async Task<IActionResult> Get()
             => Ok(await _service.GetAsync());
 
-        [HttpPut]
+        [HttpPost]
         public async Task<IActionResult> Update([FromBody] InvoiceSettings settings)
         {
             await _service.UpdateAsync(settings);

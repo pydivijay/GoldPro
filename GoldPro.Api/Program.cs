@@ -14,6 +14,23 @@ using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
+//  Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy
+            .WithOrigins(
+            "https://gold-manage-pro-vijay.netlify.app/",
+                "http://localhost:8080"                       // optional, if you test locally
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+        // Only use AllowCredentials if your frontend actually sends cookies/auth headers
+        //.AllowCredentials();
+    });
+});
+
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -121,6 +138,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 var app = builder.Build();
 
+app.UseHttpsRedirection();
+app.UseCors("AllowFrontend");
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -128,7 +148,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();

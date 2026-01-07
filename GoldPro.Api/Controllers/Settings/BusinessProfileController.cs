@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GoldPro.Api.Controllers.Settings
 {
-    [Authorize(Roles = "Admin")]
+    [Authorize]
     [ApiController]
     [Route("api/settings/business")]
     public class BusinessProfileController : ControllerBase
@@ -22,7 +22,7 @@ namespace GoldPro.Api.Controllers.Settings
         public async Task<IActionResult> Get()
             => Ok(await _service.GetAsync());
 
-        [HttpPut]
+        [HttpPost]
         public async Task<IActionResult> Update([FromBody] BusinessProfile profile)
         {
             await _service.UpdateAsync(profile);

@@ -52,7 +52,7 @@ namespace GoldPro.Application.Services
                 // Gold value calculation
                 var gross = item.WeightGrams * item.RatePerGram;
                 var deduction = gross * (item.WastagePercent / 100m);
-                var goldValue = gross - deduction;
+                var goldValue = gross;
 
                 item.GoldValue = goldValue;
                 item.DeductionValue = deduction;
@@ -67,7 +67,7 @@ namespace GoldPro.Application.Services
             sale.GoldValue = totalGoldValue;
             sale.MakingCharges = totalMaking;
             sale.Deduction = totalDeduction;
-            sale.Subtotal = sale.GoldValue + sale.MakingCharges - sale.Deduction;
+            sale.Subtotal = sale.GoldValue + sale.MakingCharges + sale.Deduction;
 
             // GST calculation: assume 3% total (1.5% CGST + 1.5% SGST) for intra-state, IGST for inter-state
             sale.GstPercent = 3m;
@@ -108,7 +108,7 @@ namespace GoldPro.Application.Services
 
         public async Task<SaleDto?> GetAsync(Guid id)
         {
-            var s = await _db.Sales.Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == id);
+            var s = await _db.Sales.Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == id && x.TenantId == _tenant.TenantId);
             if (s == null) return null;
 
             var items = s.Items.Select(i => new SaleItemDto(i.Id, i.Description, i.WeightGrams, i.RatePerGram, i.WastagePercent, i.Purity, i.MakingCharges, i.GoldValue, i.DeductionValue, i.GstValue));
@@ -118,19 +118,39 @@ namespace GoldPro.Application.Services
 
         public async Task<IEnumerable<SaleDto>> ListAsync(int page = 1, int pageSize = 20)
         {
-            var query = _db.Sales.Include(x => x.Items).OrderByDescending(x => x.CreatedAt).AsQueryable();
+            // Filter by current tenant
+            var query = _db.Sales.Include(x => x.Items).Where(x => x.TenantId == _tenant.TenantId).OrderByDescending(x => x.CreatedAt).AsQueryable();
             var list = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+            // Fetch customer info for all referenced customers in a single query
+            var customerIds = list.Where(s => s.CustomerId.HasValue).Select(s => s.CustomerId!.Value).Distinct().ToList();
+            var customers = new Dictionary<Guid, Customer>();
+            if (customerIds.Any())
+            {
+                var custList = await _db.Customers
+                    .AsNoTracking()
+                    .Where(c => customerIds.Contains(c.Id) && c.TenantId == _tenant.TenantId)
+                    .ToListAsync();
+                customers = custList.ToDictionary(c => c.Id, c => c);
+            }
 
             return list.Select(s =>
             {
                 var items = s.Items.Select(i => new SaleItemDto(i.Id, i.Description, i.WeightGrams, i.RatePerGram, i.WastagePercent, i.Purity, i.MakingCharges, i.GoldValue, i.DeductionValue, i.GstValue));
-                return new SaleDto(s.Id, s.CustomerId, s.CustomerName, s.IsInterState, items, s.GoldValue, s.MakingCharges, s.Deduction, s.Subtotal, s.GstPercent, s.Cgst, s.Sgst, s.Igst, s.TotalGstAmount, s.GrandTotal, s.TotalAmount, s.PaymentMethod, s.PaymentStatus, s.CreatedAt);
+
+                string? customerName = s.CustomerName;
+                if (s.CustomerId.HasValue && customers.TryGetValue(s.CustomerId.Value, out var cust))
+                {
+                    customerName = cust.FullName;
+                }
+
+                return new SaleDto(s.Id, s.CustomerId, customerName, s.IsInterState, items, s.GoldValue, s.MakingCharges, s.Deduction, s.Subtotal, s.GstPercent, s.Cgst, s.Sgst, s.Igst, s.TotalGstAmount, s.GrandTotal, s.TotalAmount, s.PaymentMethod, s.PaymentStatus, s.CreatedAt);
             });
         }
 
         public async Task UpdateAsync(Guid id, UpdateSaleDto dto)
         {
-            var sale = await _db.Sales.FirstOrDefaultAsync(x => x.Id == id);
+            var sale = await _db.Sales.FirstOrDefaultAsync(x => x.Id == id && x.TenantId == _tenant.TenantId);
             if (sale == null) throw new KeyNotFoundException("Sale not found");
 
             sale.PaymentStatus = dto.PaymentStatus;
@@ -142,7 +162,7 @@ namespace GoldPro.Application.Services
 
         public async Task DeleteAsync(Guid id)
         {
-            var sale = await _db.Sales.FirstOrDefaultAsync(x => x.Id == id);
+            var sale = await _db.Sales.FirstOrDefaultAsync(x => x.Id == id && x.TenantId == _tenant.TenantId);
             if (sale == null) return;
 
             _db.Sales.Remove(sale);

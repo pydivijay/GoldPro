@@ -26,8 +26,14 @@ namespace GoldPro.Api.Controllers.Settings
         [HttpGet]
         public async Task<IActionResult> Get()
         {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            var user = await _db.Users.FirstAsync(x => x.Id == userId);
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!Guid.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
+
+            // ensure the user belongs to the current tenant and handle missing user gracefully
+            var user = await _db.Users.FirstOrDefaultAsync(x => x.Id == userId && x.TenantId == _tenant.TenantId);
+            if (user == null) return NotFound();
+
             return Ok(user);
         }
 
@@ -43,8 +49,12 @@ namespace GoldPro.Api.Controllers.Settings
         [HttpPut("change-password")]
         public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
         {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            var user = await _db.Users.FirstAsync(x => x.Id == userId);
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!Guid.TryParse(userIdClaim, out var userId))
+                return Unauthorized();
+
+            var user = await _db.Users.FirstOrDefaultAsync(x => x.Id == userId && x.TenantId == _tenant.TenantId);
+            if (user == null) return NotFound();
 
             if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash))
                 return BadRequest("Invalid current password");

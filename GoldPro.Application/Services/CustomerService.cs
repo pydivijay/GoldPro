@@ -21,6 +21,9 @@ namespace GoldPro.Application.Services
         {
             var query = _db.Customers.AsQueryable();
 
+            // Restrict to current tenant
+            query = query.Where(c => c.TenantId == _tenant.TenantId);
+
             if (!string.IsNullOrWhiteSpace(search))
             {
                 query = query.Where(c => c.FullName.Contains(search) || c.PhoneNumber.Contains(search) || (c.Email != null && c.Email.Contains(search)));
@@ -51,9 +54,10 @@ namespace GoldPro.Application.Services
                 TenantId = _tenant.TenantId,
                 FullName = dto.FullName,
                 PhoneNumber = dto.PhoneNumber,
-                Email = dto.Email,
-                Address = dto.Address,
-                Gstin = dto.Gstin,
+                // Ensure non-nullable DB columns get non-null values
+                Email = dto.Email ?? string.Empty,
+                Address = dto.Address ?? string.Empty,
+                Gstin = dto.Gstin ?? string.Empty,
                 CreatedAt = dto.DateTime ?? DateTime.UtcNow
             };
 
@@ -70,9 +74,10 @@ namespace GoldPro.Application.Services
 
             c.FullName = dto.FullName;
             c.PhoneNumber = dto.PhoneNumber;
-            c.Email = dto.Email;
-            c.Address = dto.Address;
-            c.Gstin = dto.Gstin;
+            // Only update optional fields when provided to avoid setting DB non-nullable fields to null
+            c.Email = dto.Email ?? c.Email;
+            c.Address = dto.Address ?? c.Address;
+            c.Gstin = dto.Gstin ?? c.Gstin;
             // do not update CreatedAt
 
             _db.Customers.Update(c);
