@@ -21,7 +21,7 @@ builder.Services.AddCors(options =>
     {
         policy
             .WithOrigins(
-            "https://gold-manage-pro-vijay.netlify.app/",
+            "https://gold-manage-pro-vijay.netlify.app",
                 "http://localhost:8080"                       // optional, if you test locally
             )
             .AllowAnyHeader()
