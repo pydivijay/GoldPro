@@ -21,7 +21,7 @@ namespace GoldPro.Api.Controllers.Settings
         public async Task<IActionResult> Get()
             => Ok(await _service.GetAsync());
 
-        [HttpPut]
+        [HttpPost]
         public async Task<IActionResult> Update([FromBody] NotificationSettings settings)
         {
             await _service.UpdateAsync(settings);
