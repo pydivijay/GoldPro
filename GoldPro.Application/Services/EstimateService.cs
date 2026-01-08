@@ -48,7 +48,7 @@ namespace GoldPro.Application.Services
 
                 var gross = item.WeightGrams * item.RatePerGram;
                 var deduction = gross * (item.WastagePercent / 100m);
-                var goldValue = gross - deduction;
+                var goldValue = gross + deduction;
 
                 item.GoldValue = goldValue;
                 item.DeductionValue = deduction;
@@ -63,7 +63,7 @@ namespace GoldPro.Application.Services
             estimate.GoldValue = totalGoldValue;
             estimate.MakingCharges = totalMaking;
             estimate.Deduction = totalDeduction;
-            estimate.Subtotal = estimate.GoldValue + estimate.MakingCharges - estimate.Deduction;
+            estimate.Subtotal = estimate.GoldValue + estimate.MakingCharges + estimate.Deduction;
 
             estimate.GstPercent = 3m;
             if (estimate.IsInterState)
