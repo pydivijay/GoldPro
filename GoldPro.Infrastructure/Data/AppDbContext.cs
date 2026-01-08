@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
+using System.Linq.Expressions;
 
 namespace GoldPro.Domain.Data
 {
@@ -19,6 +20,9 @@ namespace GoldPro.Domain.Data
         {
             _tenant = tenant;
         }
+
+        // Expose tenant id as a DbContext property so query filters can reference it
+        public Guid TenantId => _tenant.TenantId;
 
         public DbSet<Tenant> Tenants => Set<Tenant>();
         public DbSet<BusinessProfile> BusinessProfiles => Set<BusinessProfile>();
@@ -42,14 +46,17 @@ namespace GoldPro.Domain.Data
             {
                 if (typeof(TenantEntity).IsAssignableFrom(entity.ClrType))
                 {
-                    // Build expression: (e) => EF.Property<Guid>(e, "TenantId") == _tenant.TenantId
-                    var parameter = System.Linq.Expressions.Expression.Parameter(entity.ClrType, "e");
+                    // Build expression: (e) => EF.Property<Guid>(e, "TenantId") == this.TenantId
+                    var parameter = Expression.Parameter(entity.ClrType, "e");
                     var efPropertyMethod = typeof(EF).GetMethod("Property", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);
                     var genericEfProperty = efPropertyMethod!.MakeGenericMethod(typeof(Guid));
-                    var tenantIdProperty = System.Linq.Expressions.Expression.Call(genericEfProperty, parameter, System.Linq.Expressions.Expression.Constant("TenantId"));
-                    var tenantIdValue = System.Linq.Expressions.Expression.Constant(_tenant.TenantId);
-                    var equalExpression = System.Linq.Expressions.Expression.Equal(tenantIdProperty, tenantIdValue);
-                    var lambda = System.Linq.Expressions.Expression.Lambda(equalExpression, parameter);
+                    var tenantIdProperty = Expression.Call(genericEfProperty, parameter, Expression.Constant("TenantId"));
+
+                    // Reference the context instance property TenantId so EF won't inline a constant tenant id
+                    var contextTenantProperty = Expression.Property(Expression.Constant(this), nameof(TenantId));
+
+                    var equalExpression = Expression.Equal(tenantIdProperty, contextTenantProperty);
+                    var lambda = Expression.Lambda(equalExpression, parameter);
 
                     modelBuilder.Entity(entity.ClrType)
                         .HasQueryFilter(lambda);

@@ -11,6 +11,8 @@ using System.Text;
 using System.Security.Claims;
 using System.Linq;
 using System;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,6 +41,9 @@ builder.Services.AddSwaggerGen();
 // Register Tenant context and middleware
 builder.Services.AddScoped<TenantContext>();
 builder.Services.AddScoped<ITenantContext>(sp => sp.GetRequiredService<TenantContext>());
+
+// Register a model cache key factory that includes the context type so EF won't reuse model with wrong tenant
+builder.Services.AddSingleton<IModelCacheKeyFactory, TenantModelCacheKeyFactory>();
 
 // Configure DbContext using Npgsql (Postgres)
 var connectionString =Environment.GetEnvironmentVariable("DefaultConnection") ?? builder.Configuration.GetConnectionString("DefaultConnection")
@@ -162,3 +167,16 @@ app.UseMiddleware<TenantMiddleware>();
 app.MapControllers();
 
 app.Run();
+
+// Custom model cache key factory to avoid EF reusing model built with different tenant values
+public class TenantModelCacheKeyFactory : IModelCacheKeyFactory
+{
+    // EF Core 7/8 requires Create(DbContext, bool) signature
+    public object Create(DbContext context, bool designTime)
+    {
+        if (context is AppDbContext app)
+            return (context.GetType(), app.TenantId, designTime);
+
+        return (context.GetType(), designTime);
+    }
+}
