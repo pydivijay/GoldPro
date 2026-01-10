@@ -10,5 +10,6 @@ namespace GoldPro.Application.Interfaces
         Task<OldGoldSlipDto> CreateAsync(CreateOldGoldSlipDto dto);
         Task<OldGoldSlipDto?> GetAsync(Guid id);
         Task<IEnumerable<OldGoldSlipDto>> ListAsync(int page = 1, int pageSize = 20);
+        Task<bool> DeleteAsync(Guid id);
     }
 }

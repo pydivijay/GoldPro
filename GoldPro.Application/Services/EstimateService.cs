@@ -120,5 +120,15 @@ namespace GoldPro.Application.Services
                 return new EstimateDto(e.Id, e.CustomerId, e.CustomerName, e.IsInterState, items, e.GoldValue, e.MakingCharges, e.Deduction, e.Subtotal, e.GstPercent, e.Cgst, e.Sgst, e.Igst, e.TotalGstAmount, e.EstimatedTotal, e.CreatedAt);
             });
         }
+
+        public async Task<bool> DeleteAsync(Guid id)
+        {
+            var e = await _db.Estimates.Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == id && x.TenantId == _tenant.TenantId);
+            if (e == null) return false;
+
+            _db.Estimates.Remove(e);
+            await _db.SaveChangesAsync();
+            return true;
+        }
     }
 }

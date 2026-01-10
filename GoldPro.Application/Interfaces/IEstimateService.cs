@@ -10,5 +10,6 @@ namespace GoldPro.Application.Interfaces
         Task<EstimateDto> CreateAsync(CreateEstimateDto dto);
         Task<EstimateDto?> GetAsync(Guid id);
         Task<IEnumerable<EstimateDto>> ListAsync(int page = 1, int pageSize = 20);
+        Task<bool> DeleteAsync(Guid id);
     }
 }

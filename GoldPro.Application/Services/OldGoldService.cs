@@ -90,5 +90,15 @@ namespace GoldPro.Application.Services
                 return new OldGoldSlipDto(s.Id, s.CustomerId, s.CustomerName, items, s.GoldValue, s.DeductionPercent, s.DeductionValue, s.NetPayable, s.CreatedAt);
             });
         }
+
+        public async Task<bool> DeleteAsync(Guid id)
+        {
+            var s = await _db.OldGoldSlips.Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == id && x.TenantId == _tenant.TenantId);
+            if (s == null) return false;
+
+            _db.OldGoldSlips.Remove(s);
+            await _db.SaveChangesAsync();
+            return true;
+        }
     }
 }

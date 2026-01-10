@@ -35,5 +35,13 @@ namespace GoldPro.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
             => Ok(await _service.ListAsync(page, pageSize));
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete([FromRoute] Guid id)
+        {
+            var ok = await _service.DeleteAsync(id);
+            if (!ok) return NotFound();
+            return NoContent();
+        }
     }
 }
