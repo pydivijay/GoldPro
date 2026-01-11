@@ -48,12 +48,21 @@ namespace GoldPro.Application.Services
 
         public async Task<CustomerDto> CreateAsync(CreateCustomerDto dto)
         {
+            // normalize phone for comparison
+            var phone = dto.PhoneNumber?.Trim() ?? string.Empty;
+
+            // Check uniqueness within the current tenant
+            var exists = await _db.Customers
+                .AnyAsync(c => c.TenantId == _tenant.TenantId && c.PhoneNumber == phone);
+            if (exists)
+                throw new ArgumentException("Phone number already exists");
+
             var c = new Customer
             {
                 Id = Guid.NewGuid(),
                 TenantId = _tenant.TenantId,
                 FullName = dto.FullName,
-                PhoneNumber = dto.PhoneNumber,
+                PhoneNumber = phone,
                 // Ensure non-nullable DB columns get non-null values
                 Email = dto.Email ?? string.Empty,
                 Address = dto.Address ?? string.Empty,
