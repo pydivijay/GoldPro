@@ -8,16 +8,18 @@ namespace GoldPro.Application.Services
     public class ReportService : IReportService
     {
         private readonly AppDbContext _db;
+        private readonly ITenantContext _tenant;
 
-        public ReportService(AppDbContext db)
+        public ReportService(AppDbContext db, ITenantContext tenant)
         {
             _db = db;
+            _tenant = tenant;
         }
 
         public async Task<SalesReportDto> GetSalesReportAsync(DateTime from, DateTime to)
         {
             var rows = await _db.Sales
-                .Where(s => s.CreatedAt.Date >= from.Date && s.CreatedAt.Date <= to.Date)
+                .Where(s => s.TenantId == _tenant.TenantId && s.CreatedAt.Date >= from.Date && s.CreatedAt.Date <= to.Date)
                 .GroupBy(s => s.CreatedAt.Date)
                 .Select(g => new SalesReportRow(
                     DateTime.SpecifyKind(g.Key, DateTimeKind.Utc),
@@ -42,7 +44,7 @@ namespace GoldPro.Application.Services
         public async Task<GstSummaryDto> GetGstSummaryAsync(DateTime from, DateTime to)
         {
             var rows = await _db.Sales
-                .Where(s => s.CreatedAt.Date >= from.Date && s.CreatedAt.Date <= to.Date)
+                .Where(s => s.TenantId == _tenant.TenantId && s.CreatedAt.Date >= from.Date && s.CreatedAt.Date <= to.Date)
                 .GroupBy(s => s.CreatedAt.Date)
                 .Select(g => new GstSummaryRow(
                     DateTime.SpecifyKind(g.Key, DateTimeKind.Utc),
@@ -64,22 +66,23 @@ namespace GoldPro.Application.Services
 
         public async Task<InventoryReportDto> GetInventoryReportAsync(DateTime from, DateTime to)
         {
-            // opening stock = sum of stock before 'from'
+            // opening stock = sum of stock for this tenant
             var openingGroups = await _db.StockItems
+                .Where(s => s.TenantId == _tenant.TenantId)
                 .GroupBy(s => s.Name)
                 .Select(g => new { Name = g.Key, Weight = g.Sum(x => x.WeightGrams * x.Quantity) })
                 .ToListAsync();
 
             // For demo, inward/outward are derived from Orders/Sales during period
             var inward = await _db.Orders
-                .Where(o => o.CreatedAt.Date >= from.Date && o.CreatedAt.Date <= to.Date)
+                .Where(o => o.TenantId == _tenant.TenantId && o.CreatedAt.Date >= from.Date && o.CreatedAt.Date <= to.Date)
                 .SelectMany(o => o.Items)
                 .GroupBy(i => i.Purity)
                 .Select(g => new { Purity = g.Key, Weight = g.Sum(x => x.WeightGrams) })
                 .ToListAsync();
 
             var outward = await _db.Sales
-                .Where(s => s.CreatedAt.Date >= from.Date && s.CreatedAt.Date <= to.Date)
+                .Where(s => s.TenantId == _tenant.TenantId && s.CreatedAt.Date >= from.Date && s.CreatedAt.Date <= to.Date)
                 .SelectMany(s => s.Items)
                 .GroupBy(i => i.Purity)
                 .Select(g => new { Purity = g.Key, Weight = g.Sum(x => x.WeightGrams) })
@@ -104,7 +107,7 @@ namespace GoldPro.Application.Services
         public async Task<CustomerReportDto> GetCustomerReportAsync(DateTime from, DateTime to)
         {
             var rows = await _db.Sales
-                .Where(s => s.CreatedAt.Date >= from.Date && s.CreatedAt.Date <= to.Date && s.CustomerId != null)
+                .Where(s => s.TenantId == _tenant.TenantId && s.CreatedAt.Date >= from.Date && s.CreatedAt.Date <= to.Date && s.CustomerId != null)
                 .GroupBy(s => s.CustomerId)
                 .Select(g => new CustomerReportRow(g.Key ?? Guid.Empty, g.FirstOrDefault().CustomerName ?? string.Empty, g.Sum(x => x.GrandTotal), g.Count()))
                 .ToListAsync();

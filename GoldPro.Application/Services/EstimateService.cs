@@ -63,7 +63,7 @@ namespace GoldPro.Application.Services
             estimate.GoldValue = totalGoldValue;
             estimate.MakingCharges = totalMaking;
             estimate.Deduction = totalDeduction;
-            estimate.Subtotal = estimate.GoldValue + estimate.MakingCharges + estimate.Deduction;
+            estimate.Subtotal = estimate.GoldValue + estimate.MakingCharges;
 
             estimate.GstPercent = 3m;
             if (estimate.IsInterState)
