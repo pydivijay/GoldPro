@@ -64,7 +64,7 @@ namespace GoldPro.Application.Services
                 {
                     custName = name;
                 }
-                return new RecentInvoiceDto(s.Id.ToString(), custName, s.CreatedAt, s.GrandTotal, s.PaymentStatus);
+                return new RecentInvoiceDto(s.InvoiceNo.ToString(), custName, s.CreatedAt, s.GrandTotal, s.PaymentStatus);
             }).ToArray();
 
             // Stock breakdown - aggregate by purity and type from StockItems
