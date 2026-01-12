@@ -19,6 +19,31 @@ namespace GoldPro.Application.Services
 
         public async Task<SaleDto> CreateAsync(CreateSaleDto dto)
         {
+            
+            var invoiceSettings = await _db.InvoiceSettings
+                .Where(i => i.TenantId == _tenant.TenantId)
+                .FirstAsync();
+
+           
+            var lastSequence = await _db.Sales
+                .Where(s => s.TenantId == _tenant.TenantId)
+                .OrderByDescending(s => s.InvoiceSequence)
+                .Select(s => (int?)s.InvoiceSequence)
+                .FirstOrDefaultAsync();
+
+            
+            var nextSequence = lastSequence.HasValue
+                ? lastSequence.Value + 1
+                : invoiceSettings.StartingNumber;
+
+           
+            var invoiceNo = string.Format(
+                "{0}-{1:yyyy}-{1:MM}-{2:D4}",
+                invoiceSettings.Prefix,
+                DateTime.UtcNow,
+                nextSequence
+            );
+            
             var sale = new Sale
             {
                 Id = Guid.NewGuid(),
@@ -27,7 +52,10 @@ namespace GoldPro.Application.Services
                 IsInterState = dto.IsInterState,
                 PaymentMethod = dto.PaymentMethod,
                 PaymentStatus = dto.PaymentStatus,
-                CreatedAt = dto.DateTime ?? DateTime.UtcNow
+                CreatedAt = dto.DateTime ?? DateTime.UtcNow,
+
+                InvoiceSequence = nextSequence,
+                InvoiceNo = invoiceNo
             };
 
             decimal totalGoldValue = 0;
@@ -41,6 +69,7 @@ namespace GoldPro.Application.Services
                 {
                     Id = Guid.NewGuid(),
                     SaleId = sale.Id,
+                    InvoiceNo = sale.InvoiceNo,
                     Description = it.Description,
                     WeightGrams = it.WeightGrams,
                     RatePerGram = it.RatePerGram,
@@ -111,9 +140,9 @@ namespace GoldPro.Application.Services
             var s = await _db.Sales.Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == id && x.TenantId == _tenant.TenantId);
             if (s == null) return null;
 
-            var items = s.Items.Select(i => new SaleItemDto(i.Id, i.Description, i.WeightGrams, i.RatePerGram, i.WastagePercent, i.Purity, i.MakingCharges, i.GoldValue, i.DeductionValue, i.GstValue));
+            var items = s.Items.Select(i => new SaleItemDto(i.Id, i.Description, i.WeightGrams, i.RatePerGram, i.WastagePercent, i.Purity, i.MakingCharges, i.GoldValue, i.DeductionValue, i.GstValue, i.InvoiceNo));
 
-            return new SaleDto(s.Id, s.CustomerId, s.CustomerName, s.IsInterState, items, s.GoldValue, s.MakingCharges, s.Deduction, s.Subtotal, s.GstPercent, s.Cgst, s.Sgst, s.Igst, s.TotalGstAmount, s.GrandTotal, s.TotalAmount, s.PaymentMethod, s.PaymentStatus, s.CreatedAt);
+            return new SaleDto(s.Id, s.CustomerId,s.InvoiceNo, s.CustomerName, s.IsInterState, items, s.GoldValue, s.MakingCharges, s.Deduction, s.Subtotal, s.GstPercent, s.Cgst, s.Sgst, s.Igst, s.TotalGstAmount, s.GrandTotal, s.TotalAmount, s.PaymentMethod, s.PaymentStatus, s.CreatedAt);
         }
 
         public async Task<IEnumerable<SaleDto>> ListAsync(int page = 1, int pageSize = 20)
@@ -136,7 +165,7 @@ namespace GoldPro.Application.Services
 
             return list.Select(s =>
             {
-                var items = s.Items.Select(i => new SaleItemDto(i.Id, i.Description, i.WeightGrams, i.RatePerGram, i.WastagePercent, i.Purity, i.MakingCharges, i.GoldValue, i.DeductionValue, i.GstValue));
+                var items = s.Items.Select(i => new SaleItemDto(i.Id, i.Description, i.WeightGrams, i.RatePerGram, i.WastagePercent, i.Purity, i.MakingCharges, i.GoldValue, i.DeductionValue, i.GstValue,i.InvoiceNo));
 
                 string? customerName = s.CustomerName;
                 if (s.CustomerId.HasValue && customers.TryGetValue(s.CustomerId.Value, out var cust))
@@ -144,7 +173,7 @@ namespace GoldPro.Application.Services
                     customerName = cust.FullName;
                 }
 
-                return new SaleDto(s.Id, s.CustomerId, customerName, s.IsInterState, items, s.GoldValue, s.MakingCharges, s.Deduction, s.Subtotal, s.GstPercent, s.Cgst, s.Sgst, s.Igst, s.TotalGstAmount, s.GrandTotal, s.TotalAmount, s.PaymentMethod, s.PaymentStatus, s.CreatedAt);
+                return new SaleDto(s.Id, s.CustomerId,s.InvoiceNo, customerName, s.IsInterState, items, s.GoldValue, s.MakingCharges, s.Deduction, s.Subtotal, s.GstPercent, s.Cgst, s.Sgst, s.Igst, s.TotalGstAmount, s.GrandTotal, s.TotalAmount, s.PaymentMethod, s.PaymentStatus, s.CreatedAt);
             });
         }
 

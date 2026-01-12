@@ -5,6 +5,8 @@ namespace GoldPro.Domain.Entities
 {
     public class Sale : TenantEntity
     {
+        public int InvoiceSequence { get; set; }   // numeric counter
+        public string InvoiceNo { get; set; } = null!;
         public Guid? CustomerId { get; set; }
         public string? CustomerName { get; set; }
         public bool IsInterState { get; set; }
@@ -36,6 +38,7 @@ namespace GoldPro.Domain.Entities
     public class SaleItem
     {
         public Guid Id { get; set; }
+        public string InvoiceNo { get; set; }
         public Guid SaleId { get; set; }
         public string Description { get; set; }
         public decimal WeightGrams { get; set; }

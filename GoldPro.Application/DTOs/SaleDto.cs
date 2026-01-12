@@ -13,12 +13,14 @@ namespace GoldPro.Application.DTOs
         decimal MakingCharges,
         decimal GoldValue,
         decimal DeductionValue,
-        decimal GstValue
+        decimal GstValue,
+        string InvoiceNo
     );
 
     public record SaleDto(
         Guid Id,
         Guid? CustomerId,
+        string InvoiceNo,
         string? CustomerName,
         bool IsInterState,
         IEnumerable<SaleItemDto> Items,
