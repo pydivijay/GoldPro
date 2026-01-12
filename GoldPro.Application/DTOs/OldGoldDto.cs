@@ -24,6 +24,7 @@ namespace GoldPro.Application.DTOs
         decimal DeductionPercent,
         decimal DeductionValue,
         decimal NetPayable,
-        DateTime CreatedAt
+        DateTime CreatedAt,
+        string? Notes
     );
 }

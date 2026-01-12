@@ -13,6 +13,7 @@ namespace GoldPro.Application.DTOs
 
     public record CreateOldGoldSlipDto(
         Guid? CustomerId,
+        string? customerName,
         string? Notes,
         IEnumerable<CreateOldGoldItemDto> Items,
         DateTime? DateTime

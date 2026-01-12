@@ -24,6 +24,7 @@ namespace GoldPro.Application.Services
                 Id = Guid.NewGuid(),
                 TenantId = _tenant.TenantId,
                 CustomerId = dto.CustomerId,
+                CustomerName=dto.customerName,
                 Notes = dto.Notes,
                 CreatedAt = dto.DateTime ?? DateTime.UtcNow
             };
@@ -76,7 +77,7 @@ namespace GoldPro.Application.Services
 
             var items = s.Items.Select(i => new OldGoldItemDto(i.Id, i.Purity, i.WeightGrams, i.RatePerGram, i.DeductionPercent, i.Description, i.GrossValue, i.DeductionValue, i.NetValue));
 
-            return new OldGoldSlipDto(s.Id, s.CustomerId, s.CustomerName, items, s.GoldValue, s.DeductionPercent, s.DeductionValue, s.NetPayable, s.CreatedAt);
+            return new OldGoldSlipDto(s.Id, s.CustomerId, s.CustomerName, items, s.GoldValue, s.DeductionPercent, s.DeductionValue, s.NetPayable, s.CreatedAt,s.Notes);
         }
 
         public async Task<IEnumerable<OldGoldSlipDto>> ListAsync(int page = 1, int pageSize = 20)
@@ -87,7 +88,7 @@ namespace GoldPro.Application.Services
             return list.Select(s =>
             {
                 var items = s.Items.Select(i => new OldGoldItemDto(i.Id, i.Purity, i.WeightGrams, i.RatePerGram, i.DeductionPercent, i.Description, i.GrossValue, i.DeductionValue, i.NetValue));
-                return new OldGoldSlipDto(s.Id, s.CustomerId, s.CustomerName, items, s.GoldValue, s.DeductionPercent, s.DeductionValue, s.NetPayable, s.CreatedAt);
+                return new OldGoldSlipDto(s.Id, s.CustomerId, s.CustomerName, items, s.GoldValue, s.DeductionPercent, s.DeductionValue, s.NetPayable, s.CreatedAt,s.Notes);
             });
         }
 
