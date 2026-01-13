@@ -24,6 +24,7 @@ namespace GoldPro.Application.Services
                 Id = Guid.NewGuid(),
                 TenantId = _tenant.TenantId,
                 CustomerId = dto.CustomerId,
+                CustomerName = dto.CustomerName,
                 IsInterState = dto.IsInterState,
                 CreatedAt = dto.DateTime ?? DateTime.UtcNow
             };

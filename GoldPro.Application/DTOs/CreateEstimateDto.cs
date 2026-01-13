@@ -16,6 +16,7 @@ namespace GoldPro.Application.DTOs
         Guid? CustomerId,
         bool IsInterState,
         IEnumerable<CreateEstimateItemDto> Items,
-        DateTime? DateTime
+        DateTime? DateTime,
+        string CustomerName
     );
 }
