@@ -38,5 +38,12 @@ namespace GoldPro.Api.Controllers
             var (token, tenantId) = await _tenantService.CreateTenantAsync(dto);
             return Ok(new { token, tenantId });
         }
+
+        [HttpGet("users")]
+        public async Task<IActionResult> Users()
+        {
+            var users = await _auth.GetUsersAsync();
+            return Ok(users);
+        }
     }
 }

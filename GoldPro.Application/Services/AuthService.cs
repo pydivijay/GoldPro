@@ -99,5 +99,23 @@ namespace GoldPro.Application.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
+        public async Task<List<AppUser>> GetUsersAsync()
+        {
+            return await _db.Users
+        .AsNoTracking()
+        .Where(u => u.TenantId == _tenant.TenantId)
+        .Select(u => new AppUser
+        {
+            Id = u.Id,
+            FullName = u.FullName,
+            Email = u.Email,
+            Phone = u.Phone,
+            Role = u.Role,
+            TenantId = u.TenantId
+            // PasswordHash intentionally excluded
+        })
+        .ToListAsync();
+        }
+
     }
 }
