@@ -15,5 +15,5 @@ namespace GoldPro.Application.DTOs.Reports
     public record InventoryReportDto(IEnumerable<InventoryItemRow> Items, decimal OpeningTotal, decimal InwardTotal, decimal OutwardTotal, decimal ClosingTotal);
 
     public record CustomerReportRow(Guid CustomerId, string CustomerName, decimal TotalPurchases, int OrdersCount);
-    public record CustomerReportDto(IEnumerable<CustomerReportRow> Rows, decimal TotalPurchases);
+    public record CustomerReportDto(IEnumerable<CustomerReportRow> Rows, decimal TotalPurchases,string topCustomerName);
 }

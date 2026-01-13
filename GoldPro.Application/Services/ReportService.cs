@@ -161,29 +161,45 @@ namespace GoldPro.Application.Services
 
         public async Task<CustomerReportDto> GetCustomerReportAsync(DateTime from, DateTime to)
         {
-            //  Convert ONCE
+            // Convert ONCE
             var fromUtc = DateTime.SpecifyKind(from.Date, DateTimeKind.Utc);
             var toUtcExclusive = DateTime.SpecifyKind(to.Date.AddDays(1), DateTimeKind.Utc);
 
-            var rows = await _db.Sales
-                .Where(s =>
-                    s.TenantId == _tenant.TenantId &&
-                    s.CustomerId != null &&
-                    s.CreatedAt >= fromUtc &&
-                    s.CreatedAt < toUtcExclusive
-                )
-                .GroupBy(s => new { s.CustomerId, s.CustomerName })
-                .Select(g => new CustomerReportRow(
+            var rows = await (
+                from s in _db.Sales
+                join c in _db.Customers
+                    on s.CustomerId equals c.Id into customerJoin
+                from c in customerJoin.DefaultIfEmpty()
+                where s.TenantId == _tenant.TenantId
+                      && s.CustomerId != null
+                      && s.CreatedAt >= fromUtc
+                      && s.CreatedAt < toUtcExclusive
+                group new { s, c } by new
+                {
+                    s.CustomerId,
+                    CustomerName = !string.IsNullOrEmpty(s.CustomerName)
+                        ? s.CustomerName
+                        : c!.FullName
+                }
+                into g
+                select new CustomerReportRow(
                     g.Key.CustomerId!.Value,
                     g.Key.CustomerName ?? string.Empty,
-                    g.Sum(x => x.GrandTotal),
+                    g.Sum(x => x.s.GrandTotal),
                     g.Count()
-                ))
-                .ToListAsync();
+                )
+            ).ToListAsync();
+
+            var totalPurchases = rows.Sum(r => r.TotalPurchases);
+
+            var topCustomer = rows
+                .OrderByDescending(r => r.TotalPurchases)
+                .FirstOrDefault();
 
             return new CustomerReportDto(
                 rows,
-                rows.Sum(r => r.TotalPurchases)
+                totalPurchases,
+                topCustomerName: topCustomer?.CustomerName ?? string.Empty
             );
         }
 
