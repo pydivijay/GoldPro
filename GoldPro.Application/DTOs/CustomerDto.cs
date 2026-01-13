@@ -7,6 +7,7 @@ namespace GoldPro.Application.DTOs
         string? Email,
         string? Address,
         string? Gstin,
-        DateTime CreatedAt
+        DateTime CreatedAt,
+        decimal TotalPurchases
     );
 }

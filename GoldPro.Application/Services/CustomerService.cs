@@ -17,33 +17,57 @@ namespace GoldPro.Application.Services
             _tenant = tenant;
         }
 
-        public async Task<IEnumerable<CustomerDto>> ListAsync(string? search = null, int page = 1, int pageSize = 20)
+        public async Task<IEnumerable<CustomerDto>> ListAsync(
+      string? search = null,
+      int page = 1,
+      int pageSize = 20)
         {
-            var query = _db.Customers.AsQueryable();
-
-            // Restrict to current tenant
-            query = query.Where(c => c.TenantId == _tenant.TenantId);
+            var query = _db.Customers
+                .Where(c => c.TenantId == _tenant.TenantId);
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                query = query.Where(c => c.FullName.Contains(search) || c.PhoneNumber.Contains(search) || (c.Email != null && c.Email.Contains(search)));
+                query = query.Where(c =>
+                    c.FullName.Contains(search) ||
+                    c.PhoneNumber.Contains(search) ||
+                    (c.Email != null && c.Email.Contains(search)));
             }
 
-            var items = await query
-                .OrderByDescending(c => c.CreatedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(c => new CustomerDto(c.Id, c.FullName, c.PhoneNumber, c.Email, c.Address, c.Gstin, c.CreatedAt))
-                .ToListAsync();
+            var items = await (
+                from c in query
+                join s in _db.Sales.Where(s => s.TenantId == _tenant.TenantId)
+                    on c.Id equals s.CustomerId into salesGroup
+                select new
+                {
+                    Customer = c,
+                    TotalPurchase = salesGroup.Sum(s => (decimal?)s.GrandTotal) ?? 0
+                }
+            )
+            .OrderByDescending(x => x.Customer.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(x => new CustomerDto(
+                x.Customer.Id,
+                x.Customer.FullName,
+                x.Customer.PhoneNumber,
+                x.Customer.Email,
+                x.Customer.Address,
+                x.Customer.Gstin,
+                x.Customer.CreatedAt,
+                x.TotalPurchase
+            ))
+            .ToListAsync();
 
             return items;
         }
+
+
 
         public async Task<CustomerDto?> GetAsync(Guid id)
         {
             var c = await _db.Customers.FirstOrDefaultAsync(x => x.Id == id);
             if (c == null) return null;
-            return new CustomerDto(c.Id, c.FullName, c.PhoneNumber, c.Email, c.Address, c.Gstin, c.CreatedAt);
+            return new CustomerDto(c.Id, c.FullName, c.PhoneNumber, c.Email, c.Address, c.Gstin, c.CreatedAt,0);
         }
 
         public async Task<CustomerDto> CreateAsync(CreateCustomerDto dto)
@@ -73,7 +97,7 @@ namespace GoldPro.Application.Services
             _db.Customers.Add(c);
             await _db.SaveChangesAsync();
 
-            return new CustomerDto(c.Id, c.FullName, c.PhoneNumber, c.Email, c.Address, c.Gstin, c.CreatedAt);
+            return new CustomerDto(c.Id, c.FullName, c.PhoneNumber, c.Email, c.Address, c.Gstin, c.CreatedAt,0);
         }
 
         public async Task UpdateAsync(Guid id, CreateCustomerDto dto)
