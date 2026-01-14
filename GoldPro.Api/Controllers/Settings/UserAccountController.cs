@@ -53,7 +53,7 @@ namespace GoldPro.Api.Controllers.Settings
             if (!Guid.TryParse(userIdClaim, out var userId))
                 return Unauthorized();
 
-            var user = await _db.Users.FirstOrDefaultAsync(x => x.Id == userId && x.TenantId == _tenant.TenantId);
+            var user = await _db.Users.FirstOrDefaultAsync(x => x.Id == dto.UserId && x.TenantId == _tenant.TenantId);
             if (user == null) return NotFound();
 
             if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash))
